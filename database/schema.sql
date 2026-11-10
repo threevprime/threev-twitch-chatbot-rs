@@ -1,0 +1,8 @@
+CREATE TABLE IF NOT EXISTS users (
+    user_id TEXT PRIMARY KEY,
+    first INTEGER NOT NULL,
+    second INTEGER NOT NULL,
+    third INTEGER NOT NULL,
+    daily INTEGER NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
