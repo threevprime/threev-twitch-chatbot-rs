@@ -80,9 +80,9 @@ pub async fn register_event_sub_listener(
 pub async fn send_shout_out(to: &str) {
     let response = helix(Method::POST, "chat/shoutouts")
         .query(&[
-            ("from_broadcaster_id", USER_ID),
+            ("from_broadcaster_id", USER_ID.as_str()),
             ("to_broadcaster_id", to),
-            ("moderator_id", USER_ID),
+            ("moderator_id", USER_ID.as_str()),
         ])
         .send()
         .await;
@@ -102,8 +102,8 @@ pub async fn send_shout_out(to: &str) {
 pub async fn send_chat_message(chat_message: &str) {
     let response = helix(Method::POST, "chat/messages")
         .json(&json!({
-            "broadcaster_id": USER_ID,
-            "sender_id": USER_ID,
+            "broadcaster_id": USER_ID.as_str(),
+            "sender_id": USER_ID.as_str(),
             "message": chat_message,
         }))
         .send()
@@ -132,7 +132,10 @@ pub async fn send_chat_message(chat_message: &str) {
 
 pub async fn ban_user(user_id: &str, reason: &str) {
     let response = helix(Method::POST, "moderation/bans")
-        .query(&[("broadcaster_id", USER_ID), ("moderator_id", USER_ID)])
+        .query(&[
+            ("broadcaster_id", USER_ID.as_str()),
+            ("moderator_id", USER_ID.as_str()),
+        ])
         .json(&json!({
             "data": {
                 "user_id": user_id,
