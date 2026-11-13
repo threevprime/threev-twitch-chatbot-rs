@@ -1,3 +1,4 @@
+mod bot;
 mod constants;
 mod event_sub_listeners;
 mod handle_user_data;
