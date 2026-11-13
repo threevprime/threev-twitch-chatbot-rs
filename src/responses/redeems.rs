@@ -1,14 +1,14 @@
+use crate::bot::TwitchBot;
 use crate::handle_user_data::{create_user, get_user, update_user};
-use crate::requests::send_chat_message;
 use crate::types::User;
 
-pub async fn handle_redeems(redeem: &str, user: &str, user_id: &str) {
+pub async fn handle_redeems(bot: &TwitchBot, redeem: &str, user: &str, user_id: &str) {
     match redeem {
         "first" | "second" | "third" => {
             let Some(times) = increment_redeem(user_id, redeem) else {
                 return;
             };
-            send_chat_message(&format!(
+            bot.send_chat_message(&format!(
                 "{user} is the {redeem} person to join the stream for the {} time!",
                 times_redeemed(times)
             ))
@@ -18,12 +18,15 @@ pub async fn handle_redeems(redeem: &str, user: &str, user_id: &str) {
             let Some(times) = increment_redeem(user_id, redeem) else {
                 return;
             };
-            send_chat_message(&format!(
+            bot.send_chat_message(&format!(
                 "{user} has joined the stream for the {times} time!"
             ))
             .await;
         }
-        _ => send_chat_message(&format!("{redeem} has been redeemed by {user}!")).await,
+        _ => {
+            bot.send_chat_message(&format!("{redeem} has been redeemed by {user}!"))
+                .await
+        }
     }
 }
 

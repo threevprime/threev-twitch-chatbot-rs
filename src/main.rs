@@ -1,7 +1,6 @@
 mod bot;
 mod constants;
 mod handle_user_data;
-mod requests;
 mod responses;
 mod types;
 mod utils;

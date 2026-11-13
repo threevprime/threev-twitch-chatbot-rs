@@ -1,14 +1,15 @@
+use crate::bot::TwitchBot;
 use crate::constants::{BANNABLE_SENTENCES, STREAMER_USERNAME};
-use crate::requests::{ban_user, send_chat_message, send_shout_out};
 
 const I_AM_ARRAY: [&str; 8] = ["I am", "Im", "I'm", "I’m", "i am", "im", "i'm", "i’m"];
 
-pub async fn handle_raids(raider_user_name: &str, raider_user_id: &str) {
-    send_chat_message(&format!("!so {raider_user_name}")).await;
-    send_shout_out(raider_user_id).await;
+pub async fn handle_raids(bot: &TwitchBot, raider_user_name: &str, raider_user_id: &str) {
+    bot.send_chat_message(&format!("!so {raider_user_name}"))
+        .await;
+    bot.send_shout_out(raider_user_id).await;
 }
 
-pub async fn handle_dad_jokes(user_messager: &str, message: &str) {
+pub async fn handle_dad_jokes(bot: &TwitchBot, user_messager: &str, message: &str) {
     let name = STREAMER_USERNAME.clone();
     if user_messager.to_lowercase() == name {
         return;
@@ -16,7 +17,8 @@ pub async fn handle_dad_jokes(user_messager: &str, message: &str) {
 
     for i_am in I_AM_ARRAY {
         if let Some(reply) = find_i_am(message, i_am) {
-            send_chat_message(&format!("Hi {reply}. I'm {name}.")).await;
+            bot.send_chat_message(&format!("Hi {reply}. I'm {name}."))
+                .await;
             return;
         }
     }
@@ -39,7 +41,12 @@ fn find_i_am<'a>(message: &'a str, i_am: &str) -> Option<&'a str> {
 }
 
 /// Returns true if the user got banned, so the other handlers can skip them.
-pub async fn handle_auto_bans(user_messager: &str, user_id: &str, message: &str) -> bool {
+pub async fn handle_auto_bans(
+    bot: &TwitchBot,
+    user_messager: &str,
+    user_id: &str,
+    message: &str,
+) -> bool {
     let name = STREAMER_USERNAME.clone();
     if user_messager.to_lowercase() == name {
         return false;
@@ -47,8 +54,9 @@ pub async fn handle_auto_bans(user_messager: &str, user_id: &str, message: &str)
 
     for bannable_sentence in BANNABLE_SENTENCES {
         if message.contains(bannable_sentence) {
-            ban_user(user_id, "Spam / bot message").await;
-            send_chat_message(&format!("{user_messager} has been banned!")).await;
+            bot.ban_user(user_id, "Spam / bot message").await;
+            bot.send_chat_message(&format!("{user_messager} has been banned!"))
+                .await;
             return true;
         }
     }

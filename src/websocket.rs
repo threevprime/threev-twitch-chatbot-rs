@@ -65,12 +65,12 @@ async fn handle_notification(bot: Arc<TwitchBot>, data: Value) {
             let message = text(&event["message"]["text"]);
             debug!("{user_messager}({messager_id}): {message}");
 
-            if handle_auto_bans(&user_messager, &messager_id, &message).await {
+            if handle_auto_bans(&bot, &user_messager, &messager_id, &message).await {
                 return;
             }
-            shipping_users(&user_messager, &message).await;
-            simple_response_commands(&user_messager, &message).await;
-            handle_dad_jokes(&user_messager, &message).await;
+            shipping_users(&bot, &user_messager, &message).await;
+            simple_response_commands(&bot, &user_messager, &message).await;
+            handle_dad_jokes(&bot, &user_messager, &message).await;
         }
         "channel.channel_points_custom_reward_redemption.add" => {
             let redeem_name = text(&event["reward"]["title"]);
@@ -78,7 +78,7 @@ async fn handle_notification(bot: Arc<TwitchBot>, data: Value) {
             let user_id = text(&event["user_id"]);
             debug!("{user}({user_id}) redeemed {redeem_name}");
 
-            handle_redeems(&redeem_name, &user, &user_id).await;
+            handle_redeems(&bot, &redeem_name, &user, &user_id).await;
         }
         "channel.raid" => {
             let raider_user_name = text(&event["from_broadcaster_user_name"]);
@@ -88,7 +88,7 @@ async fn handle_notification(bot: Arc<TwitchBot>, data: Value) {
                 return;
             }
 
-            handle_raids(&raider_user_name, &raider_user_id).await;
+            handle_raids(&bot, &raider_user_name, &raider_user_id).await;
         }
         _ => {}
     }
