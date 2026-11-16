@@ -1,3 +1,4 @@
+mod api;
 mod bot;
 mod constants;
 mod handle_user_data;
@@ -32,7 +33,21 @@ async fn main() {
 
     bot.get_auth().await;
 
-    // Twitch wants the token validated every hour
+    // Start Axum API
+    let app = api::create_router(Arc::clone(&bot));
+    let listener = tokio::net::TcpListener::bind("0.0.0.0:42069")
+        .await
+        .expect("Could not bind API listener");
+
+    println!("API listening on http://localhost:42069");
+    tokio::spawn(async move {
+        if let Err(error) = axum::serve(listener, app).await {
+            eprintln!("Axum server failed: {error}");
+            std::process::exit(1);
+        }
+    });
+
+    // Twitch token validation every hour
     let validator = Arc::clone(&bot);
     tokio::spawn(async move {
         let mut hourly = interval(Duration::from_secs(60 * 60));
