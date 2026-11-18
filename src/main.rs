@@ -1,3 +1,4 @@
+mod api;
 mod bot;
 mod constants;
 mod handle_user_data;
@@ -9,7 +10,7 @@ mod websocket;
 use std::sync::Arc;
 use std::time::Duration;
 
-use tokio::time::{interval, sleep};
+use tokio::time::sleep;
 
 use bot::TwitchBot;
 use constants::{CLIENT_ID, OAUTH_TOKEN, USER_ID};
@@ -24,22 +25,19 @@ async fn main() {
         std::process::exit(1);
     }
 
-    let bot = Arc::new(TwitchBot::new(
-        OAUTH_TOKEN.clone(),
-        CLIENT_ID.clone(),
-        USER_ID.clone(),
-    ));
+    let bot = TwitchBot::new(OAUTH_TOKEN.clone(), CLIENT_ID.clone(), USER_ID.clone());
 
-    bot.get_auth().await;
+    // Start Axum API
+    let app = api::create_router(Arc::clone(&bot));
+    let listener = tokio::net::TcpListener::bind("0.0.0.0:42069")
+        .await
+        .expect("Could not bind API listener");
 
-    // Twitch wants the token validated every hour
-    let validator = Arc::clone(&bot);
+    println!("API listening on http://localhost:42069");
     tokio::spawn(async move {
-        let mut hourly = interval(Duration::from_secs(60 * 60));
-        hourly.tick().await;
-        loop {
-            hourly.tick().await;
-            validator.get_auth().await;
+        if let Err(error) = axum::serve(listener, app).await {
+            eprintln!("Axum server failed: {error}");
+            std::process::exit(1);
         }
     });
 

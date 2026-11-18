@@ -6,10 +6,12 @@ Rust rewrite of the TypeScript Twitch chat bot. Uses EventSub over WebSocket and
 
 ## Setup
 
-1. Copy `.env.example` to `.env` and fill in `ACCESS_TOKEN` and `CLIENT_ID`.
+1. Get your token for the bot.
+    - You can use this site to get a token: https://twitchtokengenerator.com/
+2. Copy `.env.example` to `.env` and fill in `ACCESS_TOKEN` and `CLIENT_ID`.
    The token must be a **user** token for the streamer account with these scopes:
    `user:read:chat user:write:chat channel:read:redemptions moderator:manage:shoutouts moderator:manage:banned_users`
-2. Run it:
+3. Run it:
     - Locally: `cargo run`
     - Docker: `docker compose up -d --build`
 
