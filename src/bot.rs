@@ -1,6 +1,10 @@
 use crate::constants::API_BASE_URL;
 use reqwest::{Client, Method, RequestBuilder, StatusCode};
 use serde_json::{Value, json};
+use std::time::Duration;
+
+use std::sync::Arc;
+use tokio::time::interval;
 
 pub struct TwitchBot {
     token: String,
@@ -10,13 +14,26 @@ pub struct TwitchBot {
 }
 
 impl TwitchBot {
-    pub fn new(token: String, client_id: String, user_id: String) -> Self {
-        Self {
+    pub fn new(token: String, client_id: String, user_id: String) -> Arc<Self> {
+        let bot = Arc::new(Self {
             token: token,
             client_id: client_id,
             user_id: user_id,
             client: Client::new(),
-        }
+        });
+
+        let validator = Arc::clone(&bot);
+        tokio::spawn(async move {
+            validator.get_auth().await;
+            let mut hourly = interval(Duration::from_secs(60 * 60));
+            hourly.tick().await;
+            loop {
+                hourly.tick().await;
+                validator.get_auth().await;
+            }
+        });
+
+        bot
     }
 
     pub fn user_id(&self) -> &str {
