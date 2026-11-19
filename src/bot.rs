@@ -1,16 +1,20 @@
-use crate::constants::API_BASE_URL;
-use reqwest::{Client, Method, RequestBuilder, StatusCode};
-use serde_json::{Value, json};
+use std::collections::HashMap;
+use std::sync::{Arc, RwLock};
 use std::time::Duration;
 
-use std::sync::Arc;
+use reqwest::{Client, Method, RequestBuilder, StatusCode};
+use serde_json::{Value, json};
 use tokio::time::interval;
+
+use crate::constants::API_BASE_URL;
+use crate::types::Command;
 
 pub struct TwitchBot {
     token: String,
     client_id: String,
     user_id: String,
     client: Client,
+    commands: RwLock<HashMap<String, Arc<Command>>>,
 }
 
 impl TwitchBot {
@@ -20,6 +24,7 @@ impl TwitchBot {
             client_id: client_id,
             user_id: user_id,
             client: Client::new(),
+            commands: RwLock::new(HashMap::new()),
         });
 
         let validator = Arc::clone(&bot);
@@ -38,6 +43,41 @@ impl TwitchBot {
 
     pub fn user_id(&self) -> &str {
         &self.user_id
+    }
+
+    pub fn commands(&self) -> Vec<Arc<Command>> {
+        let comamnds = self.commands.read().unwrap_or_else(|e| e.into_inner());
+        let mut unique_commands: Vec<Arc<Command>> = Vec::new();
+
+        for cmd in comamnds.values() {
+            if !unique_commands
+                .iter()
+                .any(|existing| Arc::ptr_eq(existing, cmd))
+            {
+                unique_commands.push(Arc::clone(cmd));
+            }
+        }
+
+        unique_commands
+    }
+
+    pub fn get_command(&self, name: &str) -> Option<Arc<Command>> {
+        self.commands.read().unwrap().get(name).cloned()
+    }
+
+    pub fn add_command(&self, command: Command) {
+        let command = Arc::new(command);
+        let mut commands = self.commands.write().unwrap();
+
+        if let Some(alias) = command.alias() {
+            commands.insert(alias.to_string(), Arc::clone(&command));
+        }
+
+        commands.insert(command.name().to_string(), command);
+    }
+
+    pub fn remove_command(&self, name: &str) {
+        self.commands.write().unwrap().remove(name);
     }
 
     fn helix(&self, method: Method, endpoint: &str) -> RequestBuilder {

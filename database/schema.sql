@@ -6,3 +6,9 @@ CREATE TABLE IF NOT EXISTS users (
     daily INTEGER NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE IF NOT EXISTS commands (
+    name TEXT PRIMARY KEY,
+    alias TEXT,
+    response TEXT NOT NULL
+);
