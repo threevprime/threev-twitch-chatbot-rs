@@ -1,5 +1,5 @@
 use crate::bot::TwitchBot;
-use crate::constants::{BANNABLE_SENTENCES, STREAMER_USERNAME};
+use crate::constants::STREAMER_USERNAME;
 
 const I_AM_ARRAY: [&str; 8] = ["I am", "Im", "I'm", "I’m", "i am", "im", "i'm", "i’m"];
 
@@ -38,29 +38,6 @@ fn find_i_am<'a>(message: &'a str, i_am: &str) -> Option<&'a str> {
         }
     }
     None
-}
-
-/// Returns true if the user got banned, so the other handlers can skip them.
-pub async fn handle_auto_bans(
-    bot: &TwitchBot,
-    user_messager: &str,
-    user_id: &str,
-    message: &str,
-) -> bool {
-    let name = STREAMER_USERNAME.clone();
-    if user_messager.to_lowercase() == name {
-        return false;
-    }
-
-    for bannable_sentence in BANNABLE_SENTENCES {
-        if message.contains(bannable_sentence) {
-            bot.ban_user(user_id, "Spam / bot message").await;
-            bot.send_chat_message(&format!("{user_messager} has been banned!"))
-                .await;
-            return true;
-        }
-    }
-    false
 }
 
 #[cfg(test)]

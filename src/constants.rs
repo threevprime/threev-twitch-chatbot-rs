@@ -16,8 +16,3 @@ pub const EVENTSUB_WEBSOCKET_URL: &str = "wss://eventsub.wss.twitch.tv/ws";
 pub static DATABASE_FILEPATH: LazyLock<String> = LazyLock::new(|| {
     std::env::var("DATABASE_PATH").unwrap_or_else(|_| "./data/twitch_database.db".to_string())
 });
-pub const BANNABLE_SENTENCES: [&str; 3] = [
-    "streamboo .com",
-    "streamboo . com",
-    "I followed on twitter follow back",
-];

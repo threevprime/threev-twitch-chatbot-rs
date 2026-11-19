@@ -21,33 +21,12 @@ pub async fn simple_response_commands(bot: &TwitchBot, user_messager: &str, mess
     }
 }
 
-pub async fn shipping_users(bot: &TwitchBot, user_messager: &str, message: &str) {
-    let message_array: Vec<&str> = message.split_whitespace().collect();
-    if message_array.first() != Some(&"!ship") {
-        return;
-    }
-
-    match message_array.as_slice() {
-        [_] => {
-            bot.send_chat_message("Usage: !ship [username_1] [username_2]")
-                .await
-        }
-        [_, first] => {
-            bot.send_chat_message(&format!(
-                "{first} and {user_messager} are {}% in love!",
-                random_percentage()
-            ))
-            .await
-        }
-        [_, first, second, ..] => {
-            bot.send_chat_message(&format!(
-                "{first} and {second} are {}% in love!",
-                random_percentage()
-            ))
-            .await
-        }
-        [] => {}
-    }
+pub async fn shipping_users(bot: &TwitchBot, user: &str, other: &str) {
+    bot.send_chat_message(&format!(
+        "{user} and {other} are {}% in love!",
+        random_percentage()
+    ))
+    .await
 }
 
 pub async fn send_raid_messages(bot: &TwitchBot) {

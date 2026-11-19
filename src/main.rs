@@ -14,6 +14,7 @@ use tokio::time::sleep;
 
 use bot::TwitchBot;
 use constants::{CLIENT_ID, OAUTH_TOKEN, USER_ID};
+use handle_user_data::get_commands;
 use websocket::start_web_socket_client;
 
 #[tokio::main]
@@ -26,6 +27,15 @@ async fn main() {
     }
 
     let bot = TwitchBot::new(OAUTH_TOKEN.clone(), CLIENT_ID.clone(), USER_ID.clone());
+    match get_commands() {
+        Ok(commands) => {
+            for command in commands {
+                log::debug!("Loading existing command {:?}", command.name());
+                bot.add_command(command);
+            }
+        }
+        _ => (),
+    }
 
     // Start Axum API
     let app = api::create_router(Arc::clone(&bot));
