@@ -1,6 +1,6 @@
 use serde_json::json;
 
-use log::debug;
+use log::{debug, info};
 use std::error::Error;
 use std::sync::Arc;
 use std::time::Duration;
@@ -13,9 +13,11 @@ use tokio_tungstenite::tungstenite::Message;
 
 use crate::bot::TwitchBot;
 use crate::constants::EVENTSUB_WEBSOCKET_URL;
-use crate::responses::automatic::{handle_auto_bans, handle_dad_jokes, handle_raids};
-use crate::responses::commands::{shipping_users, simple_response_commands};
+use crate::handle_user_data::{create_command, remove_command};
+use crate::responses::automatic::{handle_dad_jokes, handle_raids};
+use crate::responses::commands::shipping_users;
 use crate::responses::redeems::handle_redeems;
+use crate::types::Command;
 
 async fn handle_registering_event_sub_listeners(bot: &TwitchBot, websocket_session_id: &str) {
     bot.register_event_sub_listener(
@@ -52,6 +54,59 @@ fn text(value: &Value) -> String {
     value.as_str().unwrap_or_default().trim().to_string()
 }
 
+async fn handle_command(bot: Arc<TwitchBot>, user_id: String, username: String, message: String) {
+    let mut contents = message.split_whitespace();
+    let Some(command_name) = contents.next() else {
+        return;
+    };
+    let command_name = command_name.trim_start_matches("!");
+
+    if let Some(command) = bot.get_command(&command_name) {
+        bot.send_chat_message(&command.response()).await;
+        return;
+    };
+
+    match command_name {
+        "cmd" => {
+            let Some(subcmd) = contents.next() else {
+                return;
+            };
+            match subcmd {
+                "add" => {
+                    let Some(cmd_name) = contents.next() else {
+                        return;
+                    };
+                    let response = contents.collect::<Vec<&str>>().join(" ");
+                    if create_command(&cmd_name, None, &response).is_ok() {
+                        info!("Added command {cmd_name} - Response: {response}");
+                        bot.send_chat_message(&format!("{cmd_name} added")).await;
+                        bot.add_command(Command::new(cmd_name.to_string(), None, response));
+                    }
+                }
+                "remove" => {
+                    let Some(cmd_name) = contents.next() else {
+                        return;
+                    };
+                    if let Ok(true) = remove_command(&cmd_name) {
+                        info!("Removed command {cmd_name}");
+                        bot.send_chat_message(&format!("{cmd_name} removed")).await;
+                        bot.remove_command(&cmd_name);
+                    }
+                }
+                _ => (),
+            }
+        }
+        // realistically this shouldnt be hardcoded
+        // but for now we dont have advanaced response
+        // parsing so we keep as is
+        "ship" => {
+            let other = contents.next().unwrap_or(&username);
+            shipping_users(&bot, &username, other).await;
+        }
+        _ => (),
+    }
+}
+
 async fn handle_notification(bot: Arc<TwitchBot>, data: Value) {
     let event = &data["payload"]["event"];
 
@@ -60,17 +115,16 @@ async fn handle_notification(bot: Arc<TwitchBot>, data: Value) {
         .unwrap_or_default()
     {
         "channel.chat.message" => {
-            let user_messager = text(&event["chatter_user_login"]);
-            let messager_id = text(&event["chatter_user_id"]);
+            let user_id = text(&event["chatter_user_id"]);
+            let username = text(&event["chatter_user_login"]);
             let message = text(&event["message"]["text"]);
-            debug!("{user_messager}({messager_id}): {message}");
+            debug!("{username}({user_id}): {message}");
 
-            if handle_auto_bans(&bot, &user_messager, &messager_id, &message).await {
-                return;
+            if message.starts_with("!") {
+                handle_command(bot, user_id, username, message).await;
+            } else {
+                handle_dad_jokes(&bot, &username, &message).await;
             }
-            shipping_users(&bot, &user_messager, &message).await;
-            simple_response_commands(&bot, &user_messager, &message).await;
-            handle_dad_jokes(&bot, &user_messager, &message).await;
         }
         "channel.channel_points_custom_reward_redemption.add" => {
             let redeem_name = text(&event["reward"]["title"]);
