@@ -1,6 +1,7 @@
 use crate::bot::TwitchBot;
 use crate::handle_user_data::{create_user, get_user, update_user};
 use crate::types::User;
+use log::error;
 
 pub async fn handle_redeems(bot: &TwitchBot, redeem: &str, user: &str, user_id: &str) {
     match redeem {
@@ -36,7 +37,7 @@ fn increment_redeem(user_id: &str, redeem: &str) -> Option<i64> {
     match try_increment_redeem(user_id, redeem) {
         Ok(times) => Some(times),
         Err(error) => {
-            eprintln!("Database error for {user_id}: {error}");
+            error!("Database error for {user_id}: {error}");
             None
         }
     }

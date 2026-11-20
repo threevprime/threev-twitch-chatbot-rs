@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
 use std::time::Duration;
 
+use log::{error, info, warn};
 use reqwest::{Client, Method, RequestBuilder, StatusCode};
 use serde_json::{Value, json};
 use tokio::time::interval;
@@ -96,16 +97,16 @@ impl TwitchBot {
             .await;
 
         match response {
-            Ok(response) if response.status() == StatusCode::OK => println!("Validated token."),
+            Ok(response) if response.status() == StatusCode::OK => info!("Validated token."),
             Ok(response) => {
-                eprintln!(
+                error!(
                     "Token is not valid. /oauth2/validate returned status code {}",
                     response.status()
                 );
-                eprintln!("{}", response.text().await.unwrap_or_default());
+                error!("{}", response.text().await.unwrap_or_default());
                 std::process::exit(1);
             }
-            Err(error) => eprintln!("Could not reach /oauth2/validate: {error}"),
+            Err(error) => error!("Could not reach /oauth2/validate: {error}"),
         }
     }
 
@@ -125,19 +126,19 @@ impl TwitchBot {
                 // A 200 doesn't mean it was posted, AutoMod etc. can still drop it
                 let data: Value = response.json().await.unwrap_or_default();
                 if data["data"][0]["is_sent"].as_bool() == Some(true) {
-                    println!("Sent chat message: {chat_message}");
+                    info!("Sent chat message: {chat_message}");
                 } else {
-                    eprintln!(
+                    warn!(
                         "Chat message was dropped: {}",
                         data["data"][0]["drop_reason"]
                     );
                 }
             }
             Ok(response) => {
-                eprintln!("Failed to send chat message");
-                eprintln!("{}", response.text().await.unwrap_or_default());
+                error!("Failed to send chat message");
+                error!("{}", response.text().await.unwrap_or_default());
             }
-            Err(error) => eprintln!("{error}"),
+            Err(error) => error!("{error}"),
         }
     }
 
@@ -154,13 +155,13 @@ impl TwitchBot {
 
         match response {
             Ok(response) if response.status() == StatusCode::NO_CONTENT => {
-                println!("Shouted out {to}")
+                info!("Shouted out {to}")
             }
             Ok(response) => {
-                eprintln!("Failed to send shoutout");
-                eprintln!("{}", response.text().await.unwrap_or_default());
+                error!("Failed to send shoutout");
+                error!("{}", response.text().await.unwrap_or_default());
             }
-            Err(error) => eprintln!("{error}"),
+            Err(error) => error!("{error}"),
         }
     }
 
@@ -181,12 +182,12 @@ impl TwitchBot {
             .await;
 
         match response {
-            Ok(response) if response.status() == StatusCode::OK => println!("Banned {user_id}"),
+            Ok(response) if response.status() == StatusCode::OK => info!("Banned {user_id}"),
             Ok(response) => {
-                eprintln!("Failed to ban user");
-                eprintln!("{}", response.text().await.unwrap_or_default());
+                error!("Failed to ban user");
+                error!("{}", response.text().await.unwrap_or_default());
             }
-            Err(error) => eprintln!("{error}"),
+            Err(error) => error!("{error}"),
         }
     }
 
@@ -214,20 +215,20 @@ impl TwitchBot {
         match response {
             Ok(response) if response.status() == StatusCode::ACCEPTED => {
                 let data: Value = response.json().await.unwrap_or_default();
-                println!(
+                info!(
                     "Subscribed to {subscription_type} [{}]",
                     data["data"][0]["id"].as_str().unwrap_or("?")
                 );
             }
             Ok(response) => {
-                eprintln!(
+                error!(
                     "Failed to subscribe to {subscription_type}. API call returned status code {}",
                     response.status()
                 );
-                eprintln!("{}", response.text().await.unwrap_or_default());
+                error!("{}", response.text().await.unwrap_or_default());
                 std::process::exit(1);
             }
-            Err(error) => eprintln!("{error}"),
+            Err(error) => error!("{error}"),
         }
     }
 }
