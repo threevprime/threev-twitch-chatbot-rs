@@ -2,6 +2,7 @@ mod api;
 mod bot;
 mod constants;
 mod handle_user_data;
+mod logger;
 mod responses;
 mod types;
 mod utils;
@@ -15,14 +16,16 @@ use tokio::time::sleep;
 use bot::TwitchBot;
 use constants::{CLIENT_ID, OAUTH_TOKEN, USER_ID};
 use handle_user_data::get_commands;
+use logger::init_logger;
 use websocket::start_web_socket_client;
 
 #[tokio::main]
 async fn main() {
     dotenvy::dotenv().ok();
+    init_logger();
 
     if let Err(error) = handle_user_data::init_database() {
-        eprintln!("Could not set up the database: {error}");
+        log::error!("Could not set up the database: {error}");
         std::process::exit(1);
     }
 
@@ -34,7 +37,7 @@ async fn main() {
                 bot.add_command(command);
             }
         }
-        _ => (),
+        Err(e) => log::error!("{:?}", e),
     }
 
     // Start Axum API
@@ -43,19 +46,19 @@ async fn main() {
         .await
         .expect("Could not bind API listener");
 
-    println!("API listening on http://localhost:42069");
+    log::info!("API listening on http://localhost:42069");
     tokio::spawn(async move {
         if let Err(error) = axum::serve(listener, app).await {
-            eprintln!("Axum server failed: {error}");
+            log::error!("Axum server failed: {error}");
             std::process::exit(1);
         }
     });
 
     loop {
         if let Err(error) = start_web_socket_client(Arc::clone(&bot)).await {
-            eprintln!("WebSocket error: {error}");
+            log::error!("WebSocket error: {error}");
         }
-        eprintln!("Reconnecting in 5 seconds...");
+        log::info!("Reconnecting in 5 seconds...");
         sleep(Duration::from_secs(5)).await;
     }
 }

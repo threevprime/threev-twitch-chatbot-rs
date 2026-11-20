@@ -1,6 +1,6 @@
 use serde_json::json;
 
-use log::{debug, info};
+use log::{debug, error, info};
 use std::error::Error;
 use std::sync::Arc;
 use std::time::Duration;
@@ -150,7 +150,7 @@ async fn handle_notification(bot: Arc<TwitchBot>, data: Value) {
 
 pub async fn start_web_socket_client(bot: Arc<TwitchBot>) -> Result<(), Box<dyn Error>> {
     let (mut web_socket_client, _) = connect_async(EVENTSUB_WEBSOCKET_URL).await?;
-    println!("WebSocket connection opened to {EVENTSUB_WEBSOCKET_URL}");
+    info!("WebSocket connection opened to {EVENTSUB_WEBSOCKET_URL}");
 
     // Only register listeners on a fresh session. After a session_reconnect
     // Twitch moves the existing subscriptions over to the new connection.
@@ -190,7 +190,7 @@ pub async fn start_web_socket_client(bot: Arc<TwitchBot>) -> Result<(), Box<dyn 
                 let reconnect_url = session["reconnect_url"]
                     .as_str()
                     .ok_or("session_reconnect without a reconnect_url")?;
-                println!("Twitch asked us to reconnect, moving to the new connection");
+                info!("Twitch asked us to reconnect, moving to the new connection");
                 (web_socket_client, _) = connect_async(reconnect_url).await?;
                 is_reconnect = true;
             }
@@ -198,7 +198,7 @@ pub async fn start_web_socket_client(bot: Arc<TwitchBot>) -> Result<(), Box<dyn 
                 tokio::spawn(handle_notification(bot.clone(), data));
             }
             "revocation" => {
-                eprintln!("Subscription revoked: {}", data["payload"]["subscription"]);
+                error!("Subscription revoked: {}", data["payload"]["subscription"]);
             }
             _ => {}
         }
