@@ -12,3 +12,9 @@ CREATE TABLE IF NOT EXISTS commands (
     alias TEXT,
     response TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS widgets (
+    id INTEGER PRIMARY KEY,
+    name TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);

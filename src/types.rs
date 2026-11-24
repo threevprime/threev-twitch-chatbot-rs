@@ -35,3 +35,10 @@ impl Command {
         &self.response
     }
 }
+
+#[derive(Debug)]
+pub struct Widget {
+    pub id: i64,
+    pub name: String,
+    pub created_at: String,
+}
