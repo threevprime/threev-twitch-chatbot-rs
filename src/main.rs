@@ -22,12 +22,12 @@ use websocket::start_web_socket_client;
 #[tokio::main]
 async fn main() {
     dotenvy::dotenv().ok();
-    init_logger();
 
     if let Err(error) = handle_user_data::init_database() {
         log::error!("Could not set up the database: {error}");
         std::process::exit(1);
     }
+    init_logger();
 
     let bot = TwitchBot::new(OAUTH_TOKEN.clone(), CLIENT_ID.clone(), USER_ID.clone());
     match get_commands() {

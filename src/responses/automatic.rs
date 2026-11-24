@@ -11,7 +11,7 @@ pub async fn handle_raids(bot: &TwitchBot, raider_user_name: &str, raider_user_i
 
 pub async fn handle_dad_jokes(bot: &TwitchBot, user_messager: &str, message: &str) {
     let name = STREAMER_USERNAME.clone();
-    if user_messager.to_lowercase() == name {
+    if user_messager.to_lowercase() == name.to_lowercase() {
         return;
     }
 
