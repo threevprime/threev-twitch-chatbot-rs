@@ -15,7 +15,7 @@ pub fn create_router(bot: Arc<TwitchBot>) -> Router {
         .route("/health", get(endpoints::health))
         // Custom Commands Endpoints
         .route("/commands", get(endpoints::get_commands))
-        .route("/command", post(endpoints::add_command))
+        .route("/command/create", post(endpoints::add_command))
         .route("/command/{name}", delete(endpoints::remove_command))
         // Widget Endpoints
         .route("/widgets", get(endpoints::get_all_widgets))
