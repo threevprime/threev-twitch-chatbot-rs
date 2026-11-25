@@ -21,12 +21,7 @@ The database is created automatically at `./data/twitch_database.db` (mounted as
 
 ### Commands
 
-- [x] !help - Lists all commands
-- [x] !github - Gives github URL
-- [x] !raid - Gives the non sub raid message
-- [x] !sussy - Shows how sussy a person is
-- [x] !rickrolled - yes
-- [x] !ship [username_1] [username_2] - Shows the compatability of 2 users
+- [x] !ship <user> - Shows the compatability between you and another user. Defaults to yourself
 
 ### Redeems
 
@@ -37,5 +32,3 @@ The database is created automatically at `./data/twitch_database.db` (mounted as
 
 - [x] Automatically shout out incoming raiders
 - [x] Automatically reply to people who have "I am, I'm, Im, i am, i'm, im" in their message
-- [x] Automatically ban people that want to do the free viewers message
-- [x] Automatically ban people that say "I followed on twitter follow back"
