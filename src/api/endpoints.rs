@@ -53,19 +53,17 @@ pub async fn websocket(State(bot): State<Arc<TwitchBot>>, ws: WebSocketUpgrade) 
     })
 }
 
-pub async fn get_commands(State(bot): State<Arc<TwitchBot>>) -> Json<serde_json::Value> {
-    Json(serde_json::json!(
+pub async fn get_commands(State(bot): State<Arc<TwitchBot>>) -> Json<Vec<CommandResponse>> {
+    Json(
         bot.commands()
             .iter()
-            .map(|command| {
-                serde_json::json!({
-                    "name": command.name(),
-                    "alias": command.alias(),
-                    "response": command.response()
-                })
+            .map(|command| CommandResponse {
+                name: command.name().to_string(),
+                alias: command.alias().map(|s| s.to_string()),
+                response: command.response().to_string(),
             })
-            .collect::<Vec<_>>()
-    ))
+            .collect(),
+    )
 }
 
 pub async fn add_command(
