@@ -1,5 +1,12 @@
 use serde::{Deserialize, Serialize};
 
+#[derive(Serialize)]
+pub struct CommandResponse {
+    pub name: String,
+    pub alias: Option<String>,
+    pub response: String,
+}
+
 #[derive(Deserialize)]
 pub struct AddCommandRequest {
     pub name: String,

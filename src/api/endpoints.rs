@@ -1,39 +1,69 @@
 use axum::{
     Json,
     body::Body,
-    extract::{Multipart, Path, State},
+    extract::{
+        Multipart, Path, State,
+        ws::{Message, WebSocketUpgrade},
+    },
     http::{HeaderValue, StatusCode, header},
-    response::Html,
-    response::Response,
+    response::{Html, Response},
 };
-use std::io::Cursor;
-use std::path::PathBuf;
-use std::sync::Arc;
+use log::error;
 use tokio::fs;
 use zip::ZipArchive;
 
-use super::types::{AddCommandRequest, UploadWidgetResponse, WidgetResponse};
+use std::io::Cursor;
+use std::path::PathBuf;
+use std::sync::Arc;
+
 use crate::bot::TwitchBot;
+use crate::eventbus::EventType;
 use crate::handle_user_data;
 use crate::types::Command;
+
+use super::types::{AddCommandRequest, CommandResponse, UploadWidgetResponse, WidgetResponse};
 
 pub async fn health() -> StatusCode {
     StatusCode::OK
 }
 
-pub async fn get_commands(State(bot): State<Arc<TwitchBot>>) -> Json<serde_json::Value> {
-    Json(serde_json::json!(
+pub async fn websocket(State(bot): State<Arc<TwitchBot>>, ws: WebSocketUpgrade) -> Response {
+    let mut receiver = bot.eventbus().subscribe();
+    ws.on_upgrade(|mut socket| async move {
+        loop {
+            match receiver.recv().await {
+                Ok(event) => {
+                    let message = match event {
+                        EventType::Message(data) => {
+                            serde_json::json!({"type": "message", "data": data})
+                        }
+                        EventType::Raid(data) => serde_json::json!({"type": "raid", "data": data}),
+                    };
+                    if let Err(e) = socket.send(Message::Text(message.to_string().into())).await {
+                        error!("Error sending data over ws: {:?}", e);
+                        break;
+                    }
+                }
+                Err(e) => {
+                    error!("Event receiver error: {:?}", e);
+                    break;
+                }
+            }
+        }
+    })
+}
+
+pub async fn get_commands(State(bot): State<Arc<TwitchBot>>) -> Json<Vec<CommandResponse>> {
+    Json(
         bot.commands()
             .iter()
-            .map(|command| {
-                serde_json::json!({
-                    "name": command.name(),
-                    "alias": command.alias(),
-                    "response": command.response()
-                })
+            .map(|command| CommandResponse {
+                name: command.name().to_string(),
+                alias: command.alias().map(|s| s.to_string()),
+                response: command.response().to_string(),
             })
-            .collect::<Vec<_>>()
-    ))
+            .collect(),
+    )
 }
 
 pub async fn add_command(

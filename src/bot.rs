@@ -8,6 +8,7 @@ use serde_json::{Value, json};
 use tokio::time::interval;
 
 use crate::constants::API_BASE_URL;
+use crate::eventbus::EventBus;
 use crate::types::Command;
 
 pub struct TwitchBot {
@@ -16,6 +17,7 @@ pub struct TwitchBot {
     user_id: String,
     client: Client,
     commands: RwLock<HashMap<String, Arc<Command>>>,
+    eventbus: EventBus,
 }
 
 impl TwitchBot {
@@ -26,6 +28,7 @@ impl TwitchBot {
             user_id: user_id,
             client: Client::new(),
             commands: RwLock::new(HashMap::new()),
+            eventbus: EventBus::new(256),
         });
 
         let validator = Arc::clone(&bot);
@@ -44,6 +47,9 @@ impl TwitchBot {
 
     pub fn user_id(&self) -> &str {
         &self.user_id
+    }
+    pub fn eventbus(&self) -> &EventBus {
+        &self.eventbus
     }
 
     pub fn commands(&self) -> Vec<Arc<Command>> {

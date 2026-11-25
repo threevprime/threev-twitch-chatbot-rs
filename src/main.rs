@@ -1,6 +1,7 @@
 mod api;
 mod bot;
 mod constants;
+mod eventbus;
 mod handle_user_data;
 mod logger;
 mod responses;

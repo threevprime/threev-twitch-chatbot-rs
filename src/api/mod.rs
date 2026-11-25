@@ -13,6 +13,8 @@ use crate::bot::TwitchBot;
 pub fn create_router(bot: Arc<TwitchBot>) -> Router {
     Router::new()
         .route("/health", get(endpoints::health))
+        // Websocket
+        .route("/ws", get(endpoints::websocket))
         // Custom Commands Endpoints
         .route("/commands", get(endpoints::get_commands))
         .route("/command/create", post(endpoints::add_command))
