@@ -13,11 +13,13 @@ use tokio_tungstenite::tungstenite::Message;
 
 use crate::bot::TwitchBot;
 use crate::constants::EVENTSUB_WEBSOCKET_URL;
+use crate::eventbus;
 use crate::handle_user_data::{create_command, remove_command};
 use crate::responses::automatic::{handle_dad_jokes, handle_raids};
 use crate::responses::commands::shipping_users;
 use crate::responses::redeems::handle_redeems;
 use crate::types::Command;
+use crate::utils::parse_json_data;
 
 async fn handle_registering_event_sub_listeners(bot: &TwitchBot, websocket_session_id: &str) {
     bot.register_event_sub_listener(
@@ -50,11 +52,7 @@ async fn handle_registering_event_sub_listeners(bot: &TwitchBot, websocket_sessi
     .await;
 }
 
-fn text(value: &Value) -> String {
-    value.as_str().unwrap_or_default().trim().to_string()
-}
-
-async fn handle_command(bot: Arc<TwitchBot>, user_id: String, username: String, message: String) {
+async fn handle_command(bot: Arc<TwitchBot>, _user_id: String, username: String, message: String) {
     let mut contents = message.split_whitespace();
     let Some(command_name) = contents.next() else {
         return;
@@ -115,10 +113,17 @@ async fn handle_notification(bot: Arc<TwitchBot>, data: Value) {
         .unwrap_or_default()
     {
         "channel.chat.message" => {
-            let user_id = text(&event["chatter_user_id"]);
-            let username = text(&event["chatter_user_login"]);
-            let message = text(&event["message"]["text"]);
+            let user_id: String = parse_json_data(&event["chatter_user_id"]);
+            let username: String = parse_json_data(&event["chatter_user_login"]);
+            let message: String = parse_json_data(&event["message"]["text"]);
             debug!("{username}({user_id}): {message}");
+
+            bot.eventbus()
+                .send(eventbus::EventType::Message(eventbus::MessageEvent {
+                    user_id: user_id.clone(),
+                    username: username.clone(),
+                    content: message.clone(),
+                }));
 
             if message.starts_with("!") {
                 handle_command(bot, user_id, username, message).await;
@@ -127,22 +132,27 @@ async fn handle_notification(bot: Arc<TwitchBot>, data: Value) {
             }
         }
         "channel.channel_points_custom_reward_redemption.add" => {
-            let redeem_name = text(&event["reward"]["title"]);
-            let user = text(&event["user_login"]);
-            let user_id = text(&event["user_id"]);
+            let redeem_name: String = parse_json_data(&event["reward"]["title"]);
+            let user: String = parse_json_data(&event["user_login"]);
+            let user_id: String = parse_json_data(&event["user_id"]);
             debug!("{user}({user_id}) redeemed {redeem_name}");
 
             handle_redeems(&bot, &redeem_name, &user, &user_id).await;
         }
         "channel.raid" => {
-            let raider_user_name = text(&event["from_broadcaster_user_name"]);
-            let raider_user_id = text(&event["from_broadcaster_user_id"]);
-            debug!("{raider_user_name}({raider_user_id}) raided");
-            if text(&event["to_broadcaster_user_id"]) != bot.user_id() {
-                return;
-            }
+            let user_id: String = parse_json_data(&event["from_broadcaster_user_id"]);
+            let username: String = parse_json_data(&event["from_broadcaster_user_name"]);
+            let viewer_count: u32 = parse_json_data(&event["viewers"]);
+            debug!("{username}({user_id}) raided");
 
-            handle_raids(&bot, &raider_user_name, &raider_user_id).await;
+            bot.eventbus()
+                .send(eventbus::EventType::Raid(eventbus::RaidEvent {
+                    user_id: user_id.clone(),
+                    username: username.clone(),
+                    viewers: viewer_count,
+                }));
+
+            handle_raids(&bot, &username, &user_id).await;
         }
         _ => {}
     }
