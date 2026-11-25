@@ -21,6 +21,33 @@ pub async fn health() -> StatusCode {
     StatusCode::OK
 }
 
+pub async fn websocket(State(bot): State<Arc<TwitchBot>>, ws: WebSocketUpgrade) -> Response {
+    let mut receiver = bot.eventbus().subscribe();
+    ws.on_upgrade(|mut socket| async move {
+        loop {
+            match receiver.recv().await {
+                Ok(event) => {
+                    let json = match serde_json::to_string(&event) {
+                        Ok(json) => json,
+                        Err(e) => {
+                            error!("Serialization error: {:?}", e);
+                            continue;
+                        }
+                    };
+
+                    if socket.send(Message::Text(json.into())).await.is_err() {
+                        break;
+                    }
+                }
+                Err(e) => {
+                    error!("Event receiver error: {:?}", e);
+                    break;
+                }
+            }
+        }
+    })
+}
+
 pub async fn get_commands(State(bot): State<Arc<TwitchBot>>) -> Json<serde_json::Value> {
     Json(serde_json::json!(
         bot.commands()
