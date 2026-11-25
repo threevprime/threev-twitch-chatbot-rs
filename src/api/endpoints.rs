@@ -1,21 +1,27 @@
 use axum::{
     Json,
     body::Body,
-    extract::{Multipart, Path, State},
+    extract::{
+        Multipart, Path, State,
+        ws::{Message, WebSocketUpgrade},
+    },
     http::{HeaderValue, StatusCode, header},
-    response::Html,
-    response::Response,
+    response::{Html, Response},
 };
-use std::io::Cursor;
-use std::path::PathBuf;
-use std::sync::Arc;
+use log::error;
 use tokio::fs;
 use zip::ZipArchive;
 
-use super::types::{AddCommandRequest, UploadWidgetResponse, WidgetResponse};
+use std::io::Cursor;
+use std::path::PathBuf;
+use std::sync::Arc;
+
 use crate::bot::TwitchBot;
+use crate::eventbus::EventType;
 use crate::handle_user_data;
 use crate::types::Command;
+
+use super::types::{AddCommandRequest, CommandResponse, UploadWidgetResponse, WidgetResponse};
 
 pub async fn health() -> StatusCode {
     StatusCode::OK
@@ -27,15 +33,14 @@ pub async fn websocket(State(bot): State<Arc<TwitchBot>>, ws: WebSocketUpgrade) 
         loop {
             match receiver.recv().await {
                 Ok(event) => {
-                    let json = match serde_json::to_string(&event) {
-                        Ok(json) => json,
-                        Err(e) => {
-                            error!("Serialization error: {:?}", e);
-                            continue;
+                    let message = match event {
+                        EventType::Message(data) => {
+                            serde_json::json!({"type": "message", "data": data})
                         }
+                        EventType::Raid(data) => serde_json::json!({"type": "raid", "data": data}),
                     };
-
-                    if socket.send(Message::Text(json.into())).await.is_err() {
+                    if let Err(e) = socket.send(Message::Text(message.to_string().into())).await {
+                        error!("Error sending data over ws: {:?}", e);
                         break;
                     }
                 }
