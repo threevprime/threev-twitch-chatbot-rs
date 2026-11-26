@@ -76,7 +76,7 @@ pub async fn add_command(
         response,
     } = payload;
 
-    match db::create_command(&name, alias.as_deref(), &response) {
+    match db::commands::create_command(&name, alias.as_deref(), &response) {
         Ok(_) => {
             bot.add_command(Command::new(name, alias, response));
             StatusCode::CREATED
@@ -89,7 +89,7 @@ pub async fn remove_command(
     State(bot): State<Arc<TwitchBot>>,
     Path(name): Path<String>,
 ) -> StatusCode {
-    match db::remove_command(&name) {
+    match db::commands::remove_command(&name) {
         Ok(_) => {
             bot.remove_command(&name);
             StatusCode::NO_CONTENT
@@ -99,7 +99,7 @@ pub async fn remove_command(
 }
 
 pub async fn get_all_widgets() -> Result<Json<Vec<WidgetResponse>>, StatusCode> {
-    let widgets = db::get_widgets().map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    let widgets = db::widgets::get_widgets().map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
     Ok(Json(
         widgets
             .iter()
@@ -134,7 +134,7 @@ pub async fn upload_widget(
     }
 
     let id =
-        db::create_widget(&name).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+        db::widgets::create_widget(&name).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
     archive
         .extract(format!("./data/widgets/{id}"))
         .map_err(|_| StatusCode::BAD_REQUEST)?;
@@ -146,7 +146,7 @@ pub async fn upload_widget(
 }
 
 pub async fn get_widget(Path(id): Path<i64>) -> Result<Html<String>, StatusCode> {
-    if !db::has_widget(id).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)? {
+    if !db::widgets::has_widget(id).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)? {
         return Err(StatusCode::BAD_REQUEST);
     }
 
@@ -165,7 +165,7 @@ pub async fn get_widget(Path(id): Path<i64>) -> Result<Html<String>, StatusCode>
 pub async fn get_widget_asset(
     Path((id, asset)): Path<(i64, String)>,
 ) -> Result<Response, StatusCode> {
-    if !db::has_widget(id).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)? {
+    if !db::widgets::has_widget(id).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)? {
         return Err(StatusCode::BAD_REQUEST);
     }
 
@@ -195,7 +195,7 @@ pub async fn get_widget_asset(
 }
 
 pub async fn delete_widget(Path(id): Path<i64>) -> Result<StatusCode, StatusCode> {
-    if !db::has_widget(id).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)? {
+    if !db::widgets::has_widget(id).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)? {
         return Err(StatusCode::BAD_REQUEST);
     }
 
@@ -204,7 +204,7 @@ pub async fn delete_widget(Path(id): Path<i64>) -> Result<StatusCode, StatusCode
         return Ok(StatusCode::BAD_REQUEST);
     }
 
-    if !db::remove_widget(id).unwrap() {
+    if !db::widgets::remove_widget(id).unwrap() {
         return Ok(StatusCode::INTERNAL_SERVER_ERROR);
     }
 

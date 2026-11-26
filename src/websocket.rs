@@ -14,7 +14,7 @@ use tokio_tungstenite::tungstenite::Message;
 use crate::bot::TwitchBot;
 use crate::constants::EVENTSUB_WEBSOCKET_URL;
 use crate::eventbus;
-use crate::db::{create_command, remove_command};
+use crate::db::commands::{create_command, remove_command};
 use crate::responses::automatic::{handle_dad_jokes, handle_raids};
 use crate::responses::commands::shipping_users;
 use crate::responses::redeems::handle_redeems;

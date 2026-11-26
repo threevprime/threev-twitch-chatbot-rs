@@ -16,7 +16,7 @@ use tokio::time::sleep;
 
 use bot::TwitchBot;
 use constants::{CLIENT_ID, OAUTH_TOKEN, USER_ID};
-use db::get_commands;
+use db::commands::get_commands;
 use logger::init_logger;
 use websocket::start_web_socket_client;
 
