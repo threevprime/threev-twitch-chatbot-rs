@@ -1,5 +1,5 @@
 use crate::bot::TwitchBot;
-use crate::handle_user_data::{create_user, get_user, update_user};
+use crate::db::{create_user, get_user, update_user};
 use crate::types::User;
 use log::error;
 

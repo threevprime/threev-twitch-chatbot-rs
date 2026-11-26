@@ -2,7 +2,7 @@ mod api;
 mod bot;
 mod constants;
 mod eventbus;
-mod handle_user_data;
+mod db;
 mod logger;
 mod responses;
 mod types;
@@ -16,7 +16,7 @@ use tokio::time::sleep;
 
 use bot::TwitchBot;
 use constants::{CLIENT_ID, OAUTH_TOKEN, USER_ID};
-use handle_user_data::get_commands;
+use db::get_commands;
 use logger::init_logger;
 use websocket::start_web_socket_client;
 
@@ -24,7 +24,7 @@ use websocket::start_web_socket_client;
 async fn main() {
     dotenvy::dotenv().ok();
 
-    if let Err(error) = handle_user_data::init_database() {
+    if let Err(error) = db::init_database() {
         log::error!("Could not set up the database: {error}");
         std::process::exit(1);
     }
